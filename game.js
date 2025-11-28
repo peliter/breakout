@@ -5,21 +5,17 @@ const ctx = canvas.getContext('2d');
 
 // Sound Manager (Placeholder)
 const soundFx = {
-    paddleHit: new Audio(), // Placeholder for paddle hit sound
-    wallBounce: new Audio() // Placeholder for wall bounce sound
+    paddleHit: new Audio(),
+    wallBounce: new Audio()
 };
 
 function loadSounds() {
-    // In a real scenario, you would load actual audio files here
-    // For now, these are just Audio objects ready to be played (silently if no source)
     console.log("Loading sounds...");
-    // Example: soundFx.paddleHit.src = 'sounds/paddle_hit.wav';
-    // Example: soundFx.wallBounce.src = 'sounds/wall_bounce.wav';
 }
 
 function playSound(sound) {
     if (sound && sound.play) {
-        sound.currentTime = 0; // Rewind to start if already playing
+        sound.currentTime = 0;
         sound.play().catch(e => console.error("Error playing sound:", e));
     }
 }
@@ -27,49 +23,35 @@ function playSound(sound) {
 // Event Listeners
 document.addEventListener('keydown', handleKeyDown, false);
 document.addEventListener('keyup', handleKeyUp, false);
+canvas.addEventListener('click', handleCanvasClick, false);
 
 gameEvents.addEventListener('paddleHit', () => playSound(soundFx.paddleHit));
 gameEvents.addEventListener('wallBounce', () => playSound(soundFx.wallBounce));
 
+// Click Handler
 function handleCanvasClick(event) {
     if (state.screen === 'startScreen') {
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
 
-        // Classic Mode Button area
-        const classicBtnX = state.canvas.width / 2 - 100;
-        const classicBtnY = state.canvas.height / 2 + 20;
         const btnWidth = 200;
         const btnHeight = 50;
-
-        if (
-            mouseX > classicBtnX &&
-            mouseX < classicBtnX + btnWidth &&
-            mouseY > classicBtnY &&
-            mouseY < classicBtnY + btnHeight
-        ) {
-            startGame('classic');
-        }
-
-        // Survival Mode Button area
-        const survivalBtnX = state.canvas.width / 2 - 100;
+        const classicBtnX = state.canvas.width / 2 - 100;
+        const classicBtnY = state.canvas.height / 2 + 20;
         const survivalBtnY = classicBtnY + btnHeight + 20;
 
-        if (
-            mouseX > survivalBtnX &&
-            mouseX < survivalBtnX + btnWidth &&
-            mouseY > survivalBtnY &&
-            mouseY < survivalBtnY + btnHeight
-        ) {
+        if (mouseY > classicBtnY && mouseY < classicBtnY + btnHeight && mouseX > classicBtnX && mouseX < classicBtnX + btnWidth) {
+            startGame('classic');
+        } else if (mouseY > survivalBtnY && mouseY < survivalBtnY + btnHeight && mouseX > classicBtnX && mouseX < classicBtnX + btnWidth) {
             startGame('survival');
         }
     } else if (state.screen === 'gameOver') {
-        reset(); // Go back to start screen on click
+        reset();
     }
 }
 
-canvas.addEventListener('click', handleCanvasClick, false);
+// --- Drawing Functions ---
 
 function drawPaddle() {
     ctx.beginPath();
@@ -90,10 +72,10 @@ function drawBall() {
 function drawBallTrail() {
     for (let i = 0; i < state.ballTrail.length; i++) {
         const trail = state.ballTrail[i];
-        const opacity = (i / state.ballTrail.length) * 0.5; // Fades out
+        const opacity = (i / state.ballTrail.length) * 0.5;
         ctx.beginPath();
-        ctx.arc(trail.x, trail.y, state.ball.radius * (i / state.ballTrail.length), 0, Math.PI * 2); // Smaller and fainter
-        ctx.fillStyle = `rgba(0, 149, 221, ${opacity})`; // Blue, fading
+        ctx.arc(trail.x, trail.y, state.ball.radius * (i / state.ballTrail.length), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 149, 221, ${opacity})`;
         ctx.fill();
         ctx.closePath();
     }
@@ -102,10 +84,10 @@ function drawBallTrail() {
 function drawPaddleTrail() {
     for (let i = 0; i < state.paddleTrail.length; i++) {
         const trail = state.paddleTrail[i];
-        const opacity = (i / state.paddleTrail.length) * 0.3; // Fades out, less opaque than ball
+        const opacity = (i / state.paddleTrail.length) * 0.3;
         ctx.beginPath();
-        ctx.rect(trail.x - state.paddle.width / 2, trail.y - state.paddle.height / 2, state.paddle.width * (i / state.paddleTrail.length), state.paddle.height * (i / state.paddleTrail.length)); // Adjust to center, scale
-        ctx.fillStyle = `rgba(0, 149, 221, ${opacity})`; // Blue, fading
+        ctx.rect(trail.x - state.paddle.width / 2, trail.y - state.paddle.height / 2, state.paddle.width * (i / state.paddleTrail.length), state.paddle.height * (i / state.paddleTrail.length));
+        ctx.fillStyle = `rgba(0, 149, 221, ${opacity})`;
         ctx.fill();
         ctx.closePath();
     }
@@ -115,22 +97,12 @@ function drawPowerUps() {
     for (const powerUp of state.powerUps) {
         ctx.beginPath();
         ctx.rect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
-        
-        let color = '#FFFFFF'; // Default to white
+        let color = '#FFFFFF';
         switch(powerUp.type) {
-            case 'PADDLE_EXTEND':
-                color = '#00FF00'; // Green
-                break;
-            case 'PADDLE_SHRINK':
-                color = '#FFA500'; // Orange
-                break;
-            case 'EXTRA_LIFE':
-                color = '#FFC0CB'; // Pink
-                break;
-
-            case 'BALL_SPEED_UP':
-                color = '#ADD8E6'; // Light Blue
-                break;
+            case 'PADDLE_EXTEND': color = '#00FF00'; break;
+            case 'PADDLE_SHRINK': color = '#FFA500'; break;
+            case 'EXTRA_LIFE': color = '#FFC0CB'; break;
+            case 'BALL_SPEED_UP': color = '#ADD8E6'; break;
         }
         ctx.fillStyle = color;
         ctx.fill();
@@ -148,7 +120,9 @@ function drawBricks() {
             ctx.closePath();
         }
     }
-}function drawLives() {
+}
+
+function drawLives() {
     ctx.font = '20px Arial';
     ctx.fillStyle = '#fff';
     ctx.fillText(`Lives: ${state.lives}`, state.canvas.width - 85, 25);
@@ -156,8 +130,42 @@ function drawBricks() {
 
 function drawScore() {
     ctx.font = '20px Arial';
-// ... (rest of file is unchanged until draw function)
-// ...
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`Score: ${state.score}`, 10, 25);
+}
+
+function drawStartScreen() {
+    ctx.font = '48px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText('BREAKOUT GAME', state.canvas.width / 2, state.canvas.height / 2 - 80);
+
+    const btnWidth = 200;
+    const btnHeight = 50;
+    const classicBtnX = state.canvas.width / 2 - 100;
+    const classicBtnY = state.canvas.height / 2 + 20;
+    const survivalBtnY = classicBtnY + btnHeight + 20;
+
+    ctx.fillStyle = '#0095DD';
+    ctx.fillRect(classicBtnX, classicBtnY, btnWidth, btnHeight);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Classic Mode', state.canvas.width / 2, classicBtnY + 35);
+    
+    ctx.fillStyle = '#FFA500';
+    ctx.fillRect(classicBtnX, survivalBtnY, btnWidth, btnHeight);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Survival Mode', state.canvas.width / 2, survivalBtnY + 35);
+
+    ctx.textAlign = 'left';
+}
+
+// --- Main Game Loop ---
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     if (state.screen === 'game') {
         drawBricks();
         drawPowerUps();
@@ -170,10 +178,10 @@ function drawScore() {
 
         if (state.showSpeedUpNotification) {
             ctx.font = '30px Arial';
-            ctx.fillStyle = '#FFD700'; // Gold color for notification
+            ctx.fillStyle = '#FFD700';
             ctx.textAlign = 'center';
             ctx.fillText('Speed Up!', state.canvas.width / 2, state.canvas.height / 2 + 50);
-            ctx.textAlign = 'left'; // Reset text alignment
+            ctx.textAlign = 'left';
         }
     } else if (state.screen === 'startScreen') {
         drawStartScreen();
@@ -184,24 +192,20 @@ function drawScore() {
         ctx.fillText('Game Over', state.canvas.width / 2, state.canvas.height / 2);
         ctx.font = '20px Arial';
         ctx.fillText('Click to Continue', state.canvas.width / 2, state.canvas.height / 2 + 40);
-        ctx.textAlign = 'left'; // Reset text alignment
+        ctx.textAlign = 'left';
     }
 }
 
-// Game loop
 function update() {
-    // Only update game logic if we are in the 'game' screen
     if (state.screen === 'game') {
         movePaddle();
         movePowerUps();
         moveBall();
     }
-    
-    draw(); // Always draw to render the current screen
+    draw();
     requestAnimationFrame(update);
 }
 
-update();
+// --- Initialization ---
 loadSounds();
-
-
+update();
