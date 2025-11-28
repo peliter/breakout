@@ -108,7 +108,7 @@ export function moveBall() {
 
     // Game over
     if (state.ball.y + state.ball.radius > state.canvas.height) {
-        state.gameOver = true;
+        state.screen = 'gameOver';
     }
 
     // Paddle collision

@@ -1,9 +1,33 @@
-import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, gameEvents } from './game.logic.js';
+import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, reset, gameEvents } from './game.logic.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-// ... (rest of the file is unchanged until handleCanvasClick)
-// ...
+
+// Sound Manager (Placeholder)
+const soundFx = {
+    paddleHit: new Audio(), // Placeholder for paddle hit sound
+    wallBounce: new Audio() // Placeholder for wall bounce sound
+};
+
+function loadSounds() {
+    // In a real scenario, you would load actual audio files here
+    // For now, these are just Audio objects ready to be played (silently if no source)
+    console.log("Loading sounds...");
+    // Example: soundFx.paddleHit.src = 'sounds/paddle_hit.wav';
+    // Example: soundFx.wallBounce.src = 'sounds/wall_bounce.wav';
+}
+
+function playSound(sound) {
+    if (sound && sound.play) {
+        sound.currentTime = 0; // Rewind to start if already playing
+        sound.play().catch(e => console.error("Error playing sound:", e));
+    }
+}
+
+// Event Listeners
+document.addEventListener('keydown', handleKeyDown, false);
+document.addEventListener('keyup', handleKeyUp, false);
+
 gameEvents.addEventListener('paddleHit', () => playSound(soundFx.paddleHit));
 gameEvents.addEventListener('wallBounce', () => playSound(soundFx.wallBounce));
 
@@ -40,6 +64,8 @@ function handleCanvasClick(event) {
         ) {
             startGame('survival');
         }
+    } else if (state.screen === 'gameOver') {
+        reset(); // Go back to start screen on click
     }
 }
 
@@ -128,46 +154,42 @@ function draw() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawPaddleTrail(); // Draw paddle trail before paddle itself
-    drawPaddle();
-    drawBallTrail(); // Draw ball trail before ball itself
-    drawBall();
-    drawScore();
+    if (state.screen === 'game') {
+        drawPaddleTrail();
+        drawPaddle();
+        drawBallTrail();
+        drawBall();
+        drawScore();
 
-    if (state.screen === 'startScreen') {
+        if (state.showSpeedUpNotification) {
+            ctx.font = '30px Arial';
+            ctx.fillStyle = '#FFD700'; // Gold color for notification
+            ctx.textAlign = 'center';
+            ctx.fillText('Speed Up!', state.canvas.width / 2, state.canvas.height / 2 + 50);
+            ctx.textAlign = 'left'; // Reset text alignment
+        }
+    } else if (state.screen === 'startScreen') {
         drawStartScreen();
     } else if (state.screen === 'gameOver') {
         ctx.font = '40px Arial';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText('Game Over', state.canvas.width / 2, state.canvas.height / 2);
-        ctx.textAlign = 'left'; // Reset text alignment
-    }
-
-    if (state.showSpeedUpNotification) {
-        ctx.font = '30px Arial';
-        ctx.fillStyle = '#FFD700'; // Gold color for notification
-        ctx.textAlign = 'center'; // Center speed up notification
-        ctx.fillText('Speed Up!', state.canvas.width / 2, state.canvas.height / 2 + 50);
+        ctx.font = '20px Arial';
+        ctx.fillText('Click to Continue', state.canvas.width / 2, state.canvas.height / 2 + 40);
         ctx.textAlign = 'left'; // Reset text alignment
     }
 }
 
 // Game loop
 function update() {
-    // If game over, just draw once and return, no further game logic updates
-    if (state.screen === 'gameOver') {
-        draw();
-        return;
-    }
-
     // Only update game logic if we are in the 'game' screen
     if (state.screen === 'game') {
         movePaddle();
         moveBall();
     }
     
-    draw(); // Always draw to render the current screen (startScreen or game)
+    draw(); // Always draw to render the current screen
     requestAnimationFrame(update);
 }
 
