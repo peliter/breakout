@@ -1,33 +1,9 @@
-import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, gameEvents } from './game.logic.js';
+import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, gameEvents } from './game.logic.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-// Sound Manager (Placeholder)
-const soundFx = {
-    paddleHit: new Audio(), // Placeholder for paddle hit sound
-    wallBounce: new Audio() // Placeholder for wall bounce sound
-};
-
-function loadSounds() {
-    // In a real scenario, you would load actual audio files here
-    // For now, these are just Audio objects ready to be played (silently if no source)
-    console.log("Loading sounds...");
-    // Example: soundFx.paddleHit.src = 'sounds/paddle_hit.wav';
-    // Example: soundFx.wallBounce.src = 'sounds/wall_bounce.wav';
-}
-
-function playSound(sound) {
-    if (sound && sound.play) {
-        sound.currentTime = 0; // Rewind to start if already playing
-        sound.play().catch(e => console.error("Error playing sound:", e));
-    }
-}
-
-// Event Listeners
-document.addEventListener('keydown', handleKeyDown, false);
-document.addEventListener('keyup', handleKeyUp, false);
-
+// ... (rest of the file is unchanged until handleCanvasClick)
+// ...
 gameEvents.addEventListener('paddleHit', () => playSound(soundFx.paddleHit));
 gameEvents.addEventListener('wallBounce', () => playSound(soundFx.wallBounce));
 
@@ -49,13 +25,7 @@ function handleCanvasClick(event) {
             mouseY > classicBtnY &&
             mouseY < classicBtnY + btnHeight
         ) {
-            // Clicked Classic Mode
-            state.gameMode = 'classic';
-            state.screen = 'game';
-            // Reset game state for classic mode (no blocks yet)
-            reset(); // The reset function will be modified later to be mode-aware
-            state.ball.dx = state.baseBallSpeed; // Start ball movement
-            state.ball.dy = -state.baseBallSpeed;
+            startGame('classic');
         }
 
         // Survival Mode Button area
@@ -68,13 +38,7 @@ function handleCanvasClick(event) {
             mouseY > survivalBtnY &&
             mouseY < survivalBtnY + btnHeight
         ) {
-            // Clicked Survival Mode
-            state.gameMode = 'survival';
-            state.screen = 'game';
-            // Reset game state for survival mode (empty blocks array)
-            reset(); // The reset function will be modified later to be mode-aware
-            state.ball.dx = state.baseBallSpeed; // Start ball movement
-            state.ball.dy = -state.baseBallSpeed;
+            startGame('survival');
         }
     }
 }

@@ -145,6 +145,23 @@ export function moveBall() {
     }
 }
 
+export function startGame(mode) {
+    state.gameMode = mode;
+    state.screen = 'game';
+    state.score = 0;
+    state.gameOver = false;
+    state.paddle.x = state.canvas.width / 2 - state.paddle.width / 2;
+    state.ball.x = state.canvas.width / 2;
+    state.ball.y = state.canvas.height - 30;
+    state.ball.dx = state.baseBallSpeed;
+    state.ball.dy = -state.baseBallSpeed;
+    state.currentSpeedLevel = 0;
+    state.showSpeedUpNotification = false;
+    state.ballTrail = [];
+    state.paddleTrail = [];
+    // Future mode-specific logic can be added here
+}
+
 export function reset() {
     state.score = 0;
     state.gameOver = false; // Reset game over status
