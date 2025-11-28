@@ -309,6 +309,9 @@ export function startGame(mode) {
     state.showSpeedUpNotification = false;
     state.ballTrail = [];
     state.paddleTrail = [];
+    state.bricks = []; // Clear bricks
+    state.powerUps = []; // Clear power-ups
+    state.paddleHitCount = 0; // Reset paddle hit count
     // Future mode-specific logic can be added here
 }
 
@@ -327,5 +330,7 @@ export function reset() {
     state.showSpeedUpNotification = false; // Reset notification
     state.ballTrail = []; // Clear ball trail
     state.paddleTrail = []; // Clear paddle trail
+    state.bricks = []; // Clear bricks
+    state.powerUps = []; // Clear power-ups
 }
 
