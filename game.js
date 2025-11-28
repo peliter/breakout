@@ -111,6 +111,18 @@ function drawPaddleTrail() {
     }
 }
 
+function drawBricks() {
+    for (const brick of state.bricks) {
+        if (brick.status === 1) {
+            ctx.beginPath();
+            ctx.rect(brick.x, brick.y, brick.width, brick.height);
+            ctx.fillStyle = brick.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+    }
+}
+
 function drawScore() {
     ctx.font = '20px Arial';
     ctx.fillStyle = '#fff';
@@ -155,6 +167,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (state.screen === 'game') {
+        drawBricks();
         drawPaddleTrail();
         drawPaddle();
         drawBallTrail();

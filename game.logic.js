@@ -23,6 +23,9 @@ export const state = {
         width: 800,
         height: 600
     },
+    // Survival Mode Feature
+    bricks: [],
+    paddleHitCount: 0,
     // Dynamic Speed Feature
     baseBallSpeed: 2,
     speedIncreaseThreshold: 10, // Increase speed every 10 points
@@ -84,7 +87,73 @@ export function updateBallSpeed() {
     }
 }
 
+export function spawnBrick() {
+    const brickWidth = 75;
+    const brickHeight = 20;
+
+    const hp = Math.floor(Math.random() * 3) + 1; // 1 to 3 HP
+    let color;
+    switch (hp) {
+        case 1: color = '#A0A0A0'; break; // Grey
+        case 2: color = '#D4A017'; break; // Gold
+        case 3: color = '#B80F0A'; break; // Red
+    }
+
+    const newBrick = {
+        x: Math.random() * (state.canvas.width * 0.6) + (state.canvas.width * 0.2), // Spawn in middle 60%
+        y: Math.random() * (state.canvas.height * 0.4) + (state.canvas.height * 0.1), // Spawn in upper 40%
+        width: brickWidth,
+        height: brickHeight,
+        hp: hp,
+        scoreValue: hp,
+        status: 1,
+        color: color
+    };
+
+    // Very simple overlap check, can be improved
+    for (const brick of state.bricks) {
+        if (
+            newBrick.x < brick.x + brick.width &&
+            newBrick.x + newBrick.width > brick.x &&
+            newBrick.y < brick.y + brick.height &&
+            newBrick.y + newBrick.height > brick.y
+        ) {
+            // Overlap detected, try spawning again in the next frame to avoid infinite loops
+            return; 
+        }
+    }
+
+    state.bricks.push(newBrick);
+}
+
 export function moveBall() {
+    // Brick collision detection
+    for (const brick of state.bricks) {
+        if (brick.status === 1) {
+            if (
+                state.ball.x > brick.x &&
+                state.ball.x < brick.x + brick.width &&
+                state.ball.y > brick.y &&
+                state.ball.y < brick.y + brick.height
+            ) {
+                state.ball.dy *= -1;
+                brick.hp--;
+                state.score += brick.scoreValue; // Increase score by brick's value
+
+                if (brick.hp <= 0) {
+                    brick.status = 0;
+                } else {
+                    // Update color based on remaining HP
+                    switch (brick.hp) {
+                        case 1: brick.color = '#A0A0A0'; break;
+                        case 2: brick.color = '#D4A017'; break;
+                    }
+                }
+                // We don't break here, allowing the ball to hit multiple bricks in one frame
+            }
+        }
+    }
+
     state.ball.x += state.ball.dx;
     state.ball.y += state.ball.dy;
 
@@ -139,8 +208,18 @@ export function moveBall() {
         // Move ball slightly to prevent getting stuck
         state.ball.y = state.paddle.y - state.ball.radius;
 
-        state.score++;
-        updateBallSpeed(); // Check and update speed when score increases
+        if (state.gameMode === 'survival') {
+            state.paddleHitCount++;
+            if (state.paddleHitCount >= 2) {
+                spawnBrick();
+                state.paddleHitCount = 0;
+            }
+        } else {
+            // In modes other than survival, increment score on paddle hit
+            state.score++;
+        }
+        
+        updateBallSpeed(); // Check and update speed
         gameEvents.dispatchEvent(new CustomEvent('paddleHit'));
     }
 }
