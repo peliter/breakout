@@ -1,7 +1,8 @@
 export const state = {
     score: 0,
     gameOver: false,
-    gameStarted: false,
+    screen: 'startScreen', // New: Controls which screen is active (startScreen, game, gameOver)
+    gameMode: 'classic', // New: Stores the current game mode (classic, survival)
     rightPressed: false,
     leftPressed: false,
     paddle: {
@@ -43,10 +44,6 @@ export function handleKeyDown(e) {
         state.rightPressed = true;
     } else if (e.code == 'Left' || e.code == 'ArrowLeft') {
         state.leftPressed = true;
-    } else if (e.code === 'Space' && !state.gameStarted) {
-        state.gameStarted = true;
-        state.ball.dx = state.baseBallSpeed;
-        state.ball.dy = -state.baseBallSpeed;
     }
 }
 
@@ -150,15 +147,15 @@ export function moveBall() {
 
 export function reset() {
     state.score = 0;
-    state.gameOver = false;
-    state.gameStarted = false;
+    state.gameOver = false; // Reset game over status
+    state.screen = 'startScreen'; // Go back to start screen
     state.rightPressed = false;
     state.leftPressed = false;
-    state.paddle.x = state.canvas.width / 2 - 50;
+    state.paddle.x = state.canvas.width / 2 - state.paddle.width / 2; // Center paddle
     state.ball.x = state.canvas.width / 2;
     state.ball.y = state.canvas.height - 30;
-    state.ball.dx = 0;
-    state.ball.dy = 0;
+    state.ball.dx = 0; // Ball stationary until game starts
+    state.ball.dy = 0; // Ball stationary until game starts
     state.currentSpeedLevel = 0; // Reset speed level
     state.showSpeedUpNotification = false; // Reset notification
     state.ballTrail = []; // Clear ball trail

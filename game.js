@@ -31,6 +31,56 @@ document.addEventListener('keyup', handleKeyUp, false);
 gameEvents.addEventListener('paddleHit', () => playSound(soundFx.paddleHit));
 gameEvents.addEventListener('wallBounce', () => playSound(soundFx.wallBounce));
 
+function handleCanvasClick(event) {
+    if (state.screen === 'startScreen') {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Classic Mode Button area
+        const classicBtnX = state.canvas.width / 2 - 100;
+        const classicBtnY = state.canvas.height / 2 + 20;
+        const btnWidth = 200;
+        const btnHeight = 50;
+
+        if (
+            mouseX > classicBtnX &&
+            mouseX < classicBtnX + btnWidth &&
+            mouseY > classicBtnY &&
+            mouseY < classicBtnY + btnHeight
+        ) {
+            // Clicked Classic Mode
+            state.gameMode = 'classic';
+            state.screen = 'game';
+            // Reset game state for classic mode (no blocks yet)
+            reset(); // The reset function will be modified later to be mode-aware
+            state.ball.dx = state.baseBallSpeed; // Start ball movement
+            state.ball.dy = -state.baseBallSpeed;
+        }
+
+        // Survival Mode Button area
+        const survivalBtnX = state.canvas.width / 2 - 100;
+        const survivalBtnY = classicBtnY + btnHeight + 20;
+
+        if (
+            mouseX > survivalBtnX &&
+            mouseX < survivalBtnX + btnWidth &&
+            mouseY > survivalBtnY &&
+            mouseY < survivalBtnY + btnHeight
+        ) {
+            // Clicked Survival Mode
+            state.gameMode = 'survival';
+            state.screen = 'game';
+            // Reset game state for survival mode (empty blocks array)
+            reset(); // The reset function will be modified later to be mode-aware
+            state.ball.dx = state.baseBallSpeed; // Start ball movement
+            state.ball.dy = -state.baseBallSpeed;
+        }
+    }
+}
+
+canvas.addEventListener('click', handleCanvasClick, false);
+
 function drawPaddle() {
     ctx.beginPath();
     ctx.rect(state.paddle.x, state.paddle.y, state.paddle.width, state.paddle.height);
@@ -77,6 +127,38 @@ function drawScore() {
     ctx.fillText(`Score: ${state.score}`, 10, 25);
 }
 
+// Function to draw the start screen with mode selection buttons
+function drawStartScreen() {
+    ctx.font = '48px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText('BREAKOUT GAME', state.canvas.width / 2, state.canvas.height / 2 - 80);
+
+    // Draw Classic Mode Button
+    const classicBtnX = state.canvas.width / 2 - 100;
+    const classicBtnY = state.canvas.height / 2 + 20;
+    const btnWidth = 200;
+    const btnHeight = 50;
+
+    ctx.fillStyle = '#0095DD'; // Button background
+    ctx.fillRect(classicBtnX, classicBtnY, btnWidth, btnHeight);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff'; // Button text
+    ctx.fillText('Classic Mode', state.canvas.width / 2, classicBtnY + 35);
+
+    // Draw Survival Mode Button
+    const survivalBtnX = state.canvas.width / 2 - 100;
+    const survivalBtnY = classicBtnY + btnHeight + 20; // Below Classic button
+    
+    ctx.fillStyle = '#FFA500'; // Different color for survival
+    ctx.fillRect(survivalBtnX, survivalBtnY, btnWidth, btnHeight);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Survival Mode', state.canvas.width / 2, survivalBtnY + 35);
+
+    ctx.textAlign = 'left'; // Reset text alignment
+}
+
 // Main draw function
 function draw() {
     // Clear canvas
@@ -88,39 +170,40 @@ function draw() {
     drawBall();
     drawScore();
 
-    if (!state.gameStarted) {
-        ctx.font = '30px Arial';
-        ctx.fillStyle = '#fff';
-        ctx.fillText('Press Spacebar to Start', canvas.width / 2 - 150, canvas.height / 2);
-    }
-
-    if (state.gameOver) {
+    if (state.screen === 'startScreen') {
+        drawStartScreen();
+    } else if (state.screen === 'gameOver') {
         ctx.font = '40px Arial';
         ctx.fillStyle = '#fff';
-        ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over', state.canvas.width / 2, state.canvas.height / 2);
+        ctx.textAlign = 'left'; // Reset text alignment
     }
 
     if (state.showSpeedUpNotification) {
         ctx.font = '30px Arial';
         ctx.fillStyle = '#FFD700'; // Gold color for notification
-        ctx.fillText('Speed Up!', canvas.width / 2 - 70, canvas.height / 2 + 50);
+        ctx.textAlign = 'center'; // Center speed up notification
+        ctx.fillText('Speed Up!', state.canvas.width / 2, state.canvas.height / 2 + 50);
+        ctx.textAlign = 'left'; // Reset text alignment
     }
 }
 
 // Game loop
 function update() {
-    if (state.gameOver) {
+    // If game over, just draw once and return, no further game logic updates
+    if (state.screen === 'gameOver') {
         draw();
         return;
     }
 
-    movePaddle();
-
-    if (state.gameStarted) {
+    // Only update game logic if we are in the 'game' screen
+    if (state.screen === 'game') {
+        movePaddle();
         moveBall();
     }
-
-    draw();
+    
+    draw(); // Always draw to render the current screen (startScreen or game)
     requestAnimationFrame(update);
 }
 
