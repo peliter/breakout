@@ -148,8 +148,17 @@ export function movePowerUps() {
 export function spawnBrick() {
     const brickWidth = 75;
     const brickHeight = 20;
+    let hp;
+    const rand = Math.random();
 
-    const hp = Math.floor(Math.random() * 3) + 1; // 1 to 3 HP
+    if (rand < 0.45) {
+        hp = 1; // 45% chance
+    } else if (rand < 0.80) { // 0.45 + 0.35
+        hp = 2; // 35% chance
+    } else {
+        hp = 3; // 20% chance
+    }
+
     let color;
     switch (hp) {
         case 1: color = '#A0A0A0'; break; // Grey
@@ -200,8 +209,8 @@ export function moveBall() {
 
                 if (brick.hp <= 0) {
                     brick.status = 0;
-                    // 30% chance to spawn a power-up
-                    if (Math.random() < 0.3) {
+                    // Power-ups only spawn from 3-hit bricks
+                    if (brick.scoreValue === 3 && Math.random() < 0.3) { // 30% chance from 3-hp bricks
                         spawnPowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2);
                     }
                 } else {
