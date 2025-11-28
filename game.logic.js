@@ -26,6 +26,8 @@ export const state = {
     // Survival Mode Feature
     bricks: [],
     paddleHitCount: 0,
+    lives: 3,
+    powerUps: [],
     // Dynamic Speed Feature
     baseBallSpeed: 2,
     speedIncreaseThreshold: 10, // Increase speed every 10 points
@@ -87,6 +89,62 @@ export function updateBallSpeed() {
     }
 }
 
+export function spawnPowerUp(x, y) {
+    const powerUpTypes = ['PADDLE_EXTEND', 'PADDLE_SHRINK'];
+    const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+    
+    const newPowerUp = {
+        x: x,
+        y: y,
+        width: 15,
+        height: 15,
+        type: type,
+        speed: 1.5
+    };
+    state.powerUps.push(newPowerUp);
+}
+
+export function activatePowerUp(type) {
+    const originalWidth = 100; // Original paddle width
+    switch (type) {
+        case 'PADDLE_EXTEND':
+            state.paddle.width = originalWidth * 1.5;
+            setTimeout(() => {
+                state.paddle.width = originalWidth;
+            }, 10000); // Effect lasts 10 seconds
+            break;
+        case 'PADDLE_SHRINK':
+            state.paddle.width = originalWidth * 0.5;
+            setTimeout(() => {
+                state.paddle.width = originalWidth;
+            }, 10000); // Effect lasts 10 seconds
+            break;
+    }
+}
+
+export function movePowerUps() {
+    for (let i = state.powerUps.length - 1; i >= 0; i--) {
+        const powerUp = state.powerUps[i];
+        powerUp.y += powerUp.speed;
+
+        // Collision with paddle
+        if (
+            powerUp.x < state.paddle.x + state.paddle.width &&
+            powerUp.x + powerUp.width > state.paddle.x &&
+            powerUp.y < state.paddle.y + state.paddle.height &&
+            powerUp.y + powerUp.height > state.paddle.y
+        ) {
+            activatePowerUp(powerUp.type);
+            state.powerUps.splice(i, 1); // Remove power-up from array
+        }
+
+        // Remove if it goes off-screen
+        if (powerUp.y + powerUp.height > state.canvas.height) {
+            state.powerUps.splice(i, 1);
+        }
+    }
+}
+
 export function spawnBrick() {
     const brickWidth = 75;
     const brickHeight = 20;
@@ -142,6 +200,10 @@ export function moveBall() {
 
                 if (brick.hp <= 0) {
                     brick.status = 0;
+                    // 30% chance to spawn a power-up
+                    if (Math.random() < 0.3) {
+                        spawnPowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2);
+                    }
                 } else {
                     // Update color based on remaining HP
                     switch (brick.hp) {

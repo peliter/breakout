@@ -1,4 +1,4 @@
-import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, reset, gameEvents } from './game.logic.js';
+import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, reset, movePowerUps, gameEvents } from './game.logic.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -111,6 +111,17 @@ function drawPaddleTrail() {
     }
 }
 
+function drawPowerUps() {
+    for (const powerUp of state.powerUps) {
+        ctx.beginPath();
+        ctx.rect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+        // Green for good, orange for bad
+        ctx.fillStyle = powerUp.type === 'PADDLE_EXTEND' ? '#00FF00' : '#FFA500';
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
 function drawBricks() {
     for (const brick of state.bricks) {
         if (brick.status === 1) {
@@ -168,6 +179,7 @@ function draw() {
 
     if (state.screen === 'game') {
         drawBricks();
+        drawPowerUps();
         drawPaddleTrail();
         drawPaddle();
         drawBallTrail();
@@ -199,6 +211,7 @@ function update() {
     // Only update game logic if we are in the 'game' screen
     if (state.screen === 'game') {
         movePaddle();
+        movePowerUps();
         moveBall();
     }
     
