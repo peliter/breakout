@@ -30,6 +30,25 @@ gameEvents.addEventListener('wallBounce', () => playSound(soundFx.wallBounce));
 
 // Click Handler
 function handleCanvasClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    if (state.screen === 'game') {
+        const buttonWidth = 40;
+        const buttonHeight = 40;
+        const padding = 10;
+        const btnX = state.canvas.width - buttonWidth - padding;
+        const btnY = state.canvas.height - buttonHeight - padding;
+
+        // Check if click is on the pause button
+        if (mouseX >= btnX && mouseX <= btnX + buttonWidth &&
+            mouseY >= btnY && mouseY <= btnY + buttonHeight) {
+            state.isPaused = !state.isPaused;
+            return; // Handle button click, do not process other game clicks
+        }
+    }
+
     if (state.screen === 'startScreen') {
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
@@ -128,6 +147,31 @@ function drawLives() {
     ctx.fillText(`Lives: ${state.lives}`, state.canvas.width - 85, 25);
 }
 
+function drawPauseButton() {
+    const buttonWidth = 40;
+    const buttonHeight = 40;
+    const padding = 10;
+    const btnX = state.canvas.width - buttonWidth - padding;
+    const btnY = state.canvas.height - buttonHeight - padding;
+
+    // Draw button background
+    ctx.beginPath();
+    ctx.rect(btnX, btnY, buttonWidth, buttonHeight);
+    ctx.fillStyle = '#0056b3'; // Darker blue for button
+    ctx.fill();
+    ctx.closePath();
+
+    // Draw pause/play symbol
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle'; // Center text vertically
+    const symbol = state.isPaused ? '▶' : '||';
+    ctx.fillText(symbol, btnX + buttonWidth / 2, btnY + buttonHeight / 2);
+    ctx.textAlign = 'left'; // Reset for other text
+    ctx.textBaseline = 'alphabetic'; // Reset for other text
+}
+
 function drawScore() {
     ctx.font = '20px Arial';
     ctx.fillStyle = '#fff';
@@ -175,6 +219,15 @@ function draw() {
         drawBall();
         drawScore();
         drawLives();
+        drawPauseButton(); // Call the new function
+
+        if (state.isPaused) {
+            ctx.font = '48px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText('PAUSED', state.canvas.width / 2, state.canvas.height / 2);
+            ctx.textAlign = 'left';
+        }
 
         if (state.showSpeedUpNotification) {
             ctx.font = '30px Arial';
@@ -197,7 +250,7 @@ function draw() {
 }
 
 function update() {
-    if (state.screen === 'game') {
+    if (state.screen === 'game' && !state.isPaused) {
         movePaddle();
         movePowerUps();
         moveBall();

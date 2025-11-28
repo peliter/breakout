@@ -1,0 +1,7 @@
+# Dependencies
+/node_modules
+
+# Tooling
+.gemini/
+.qoder/
+QODER.md

@@ -30,10 +30,11 @@ export const state = {
     powerUps: [],
     // Dynamic Speed Feature
     baseBallSpeed: 2,
-    speedIncreaseThreshold: 10, // Increase speed every 10 points
+    speedIncreaseThreshold: 5, // Increase speed every 5 points
     speedIncreaseFactor: 0.2,   // Increase speed by 20%
     currentSpeedLevel: 0,
     showSpeedUpNotification: false,
+    isPaused: false, // New: Game pause state
     // Visual Enhancements
     ballTrail: [],
     paddleTrail: [],
@@ -45,6 +46,14 @@ const gameEvents = new EventTarget();
 export { gameEvents };
 
 export function handleKeyDown(e) {
+    if (e.code === 'KeyP') {
+        state.isPaused = !state.isPaused;
+        return; // Don't process other keys if P is pressed
+    }
+    if (state.isPaused) {
+        return; // Ignore other key presses if paused
+    }
+
     if (e.code == 'Right' || e.code == 'ArrowRight') {
         state.rightPressed = true;
     } else if (e.code == 'Left' || e.code == 'ArrowLeft') {
@@ -220,11 +229,12 @@ export function moveBall() {
                 state.ball.dy *= -1;
                 brick.hp--;
                 state.score += brick.scoreValue; // Increase score by brick's value
+                updateBallSpeed(); // Check and update speed
 
                 if (brick.hp <= 0) {
                     brick.status = 0;
                     // Power-ups only spawn from 3-hit bricks
-                    if (brick.scoreValue === 3 && Math.random() < 0.3) { // 30% chance from 3-hp bricks
+                    if (brick.scoreValue === 3) { // 100% chance from 3-hp bricks
                         spawnPowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2);
                     }
                 } else {
@@ -313,9 +323,9 @@ export function moveBall() {
         } else {
             // In modes other than survival, increment score on paddle hit
             state.score++;
+            updateBallSpeed(); // Check and update speed
         }
         
-        updateBallSpeed(); // Check and update speed
         gameEvents.dispatchEvent(new CustomEvent('paddleHit'));
     }
 }
