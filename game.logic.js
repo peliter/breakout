@@ -90,7 +90,7 @@ export function updateBallSpeed() {
 }
 
 export function spawnPowerUp(x, y) {
-    const powerUpTypes = ['PADDLE_EXTEND', 'PADDLE_SHRINK'];
+    const powerUpTypes = ['PADDLE_EXTEND', 'PADDLE_SHRINK', 'EXTRA_LIFE', 'BALL_SPEED_UP'];
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
     
     const newPowerUp = {
@@ -106,6 +106,8 @@ export function spawnPowerUp(x, y) {
 
 export function activatePowerUp(type) {
     const originalWidth = 100; // Original paddle width
+    const baseSpeed = state.baseBallSpeed * (1 + state.currentSpeedLevel * state.speedIncreaseFactor);
+
     switch (type) {
         case 'PADDLE_EXTEND':
             state.paddle.width = originalWidth * 1.5;
@@ -117,6 +119,18 @@ export function activatePowerUp(type) {
             state.paddle.width = originalWidth * 0.5;
             setTimeout(() => {
                 state.paddle.width = originalWidth;
+            }, 10000); // Effect lasts 10 seconds
+            break;
+        case 'EXTRA_LIFE':
+            state.lives++;
+            break;
+        case 'BALL_SPEED_UP':
+            const speedMultiplier = 1.5;
+            state.ball.dx *= speedMultiplier;
+            state.ball.dy *= speedMultiplier;
+            setTimeout(() => {
+                state.ball.dx /= speedMultiplier;
+                state.ball.dy /= speedMultiplier;
             }, 10000); // Effect lasts 10 seconds
             break;
     }
@@ -248,7 +262,18 @@ export function moveBall() {
 
     // Game over
     if (state.ball.y + state.ball.radius > state.canvas.height) {
-        state.screen = 'gameOver';
+        state.lives--;
+        if (state.lives <= 0) {
+            state.screen = 'gameOver';
+        } else {
+            // Reset ball to starting position
+            state.ball.x = state.canvas.width / 2;
+            state.ball.y = state.canvas.height - 30;
+            state.ball.dx = state.baseBallSpeed;
+            state.ball.dy = -state.baseBallSpeed;
+            // Also reset paddle position
+            state.paddle.x = state.canvas.width / 2 - state.paddle.width / 2;
+        }
     }
 
     // Paddle collision

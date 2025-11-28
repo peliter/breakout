@@ -115,8 +115,24 @@ function drawPowerUps() {
     for (const powerUp of state.powerUps) {
         ctx.beginPath();
         ctx.rect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
-        // Green for good, orange for bad
-        ctx.fillStyle = powerUp.type === 'PADDLE_EXTEND' ? '#00FF00' : '#FFA500';
+        
+        let color = '#FFFFFF'; // Default to white
+        switch(powerUp.type) {
+            case 'PADDLE_EXTEND':
+                color = '#00FF00'; // Green
+                break;
+            case 'PADDLE_SHRINK':
+                color = '#FFA500'; // Orange
+                break;
+            case 'EXTRA_LIFE':
+                color = '#FFC0CB'; // Pink
+                break;
+
+            case 'BALL_SPEED_UP':
+                color = '#ADD8E6'; // Light Blue
+                break;
+        }
+        ctx.fillStyle = color;
         ctx.fill();
         ctx.closePath();
     }
@@ -132,51 +148,16 @@ function drawBricks() {
             ctx.closePath();
         }
     }
+}function drawLives() {
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`Lives: ${state.lives}`, state.canvas.width - 85, 25);
 }
 
 function drawScore() {
     ctx.font = '20px Arial';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(`Score: ${state.score}`, 10, 25);
-}
-
-// Function to draw the start screen with mode selection buttons
-function drawStartScreen() {
-    ctx.font = '48px Arial';
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText('BREAKOUT GAME', state.canvas.width / 2, state.canvas.height / 2 - 80);
-
-    // Draw Classic Mode Button
-    const classicBtnX = state.canvas.width / 2 - 100;
-    const classicBtnY = state.canvas.height / 2 + 20;
-    const btnWidth = 200;
-    const btnHeight = 50;
-
-    ctx.fillStyle = '#0095DD'; // Button background
-    ctx.fillRect(classicBtnX, classicBtnY, btnWidth, btnHeight);
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#fff'; // Button text
-    ctx.fillText('Classic Mode', state.canvas.width / 2, classicBtnY + 35);
-
-    // Draw Survival Mode Button
-    const survivalBtnX = state.canvas.width / 2 - 100;
-    const survivalBtnY = classicBtnY + btnHeight + 20; // Below Classic button
-    
-    ctx.fillStyle = '#FFA500'; // Different color for survival
-    ctx.fillRect(survivalBtnX, survivalBtnY, btnWidth, btnHeight);
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Survival Mode', state.canvas.width / 2, survivalBtnY + 35);
-
-    ctx.textAlign = 'left'; // Reset text alignment
-}
-
-// Main draw function
-function draw() {
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+// ... (rest of file is unchanged until draw function)
+// ...
     if (state.screen === 'game') {
         drawBricks();
         drawPowerUps();
@@ -185,6 +166,7 @@ function draw() {
         drawBallTrail();
         drawBall();
         drawScore();
+        drawLives();
 
         if (state.showSpeedUpNotification) {
             ctx.font = '30px Arial';
