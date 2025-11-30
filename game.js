@@ -1,4 +1,4 @@
-import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, reset, movePowerUps, gameEvents } from './game.logic.js';
+import { state, handleKeyDown, handleKeyUp, movePaddle, moveBall, startGame, reset, movePowerUps, gameEvents, startChallengeMode, resetBallAndPaddle } from './game.logic.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -17,6 +17,47 @@ function playSound(sound) {
     if (sound && sound.play) {
         sound.currentTime = 0;
         sound.play().catch(e => console.error("Error playing sound:", e));
+    }
+}
+
+// Gamepad Polling
+function pollGamepads() {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (gamepads.length === 0) {
+        return;
+    }
+
+    // Only consider the first connected gamepad for simplicity
+    const gp = gamepads[0];
+
+    if (gp) {
+        // Reset keyboard state to avoid conflicts
+        state.leftPressed = false;
+        state.rightPressed = false;
+
+        // Check D-pad (buttons 14 and 15 for left and right respectively on standard gamepads)
+        if (gp.buttons[14] && gp.buttons[14].pressed) {
+            state.leftPressed = true;
+        }
+        if (gp.buttons[15] && gp.buttons[15].pressed) {
+            state.rightPressed = true;
+        }
+
+        // Check left analog stick (axis 0 for horizontal movement)
+        // A threshold is used to account for minor stick drift
+        const horizontalAxis = gp.axes[0];
+        if (horizontalAxis < -0.5) { // Left
+            state.leftPressed = true;
+        } else if (horizontalAxis > 0.5) { // Right
+            state.rightPressed = true;
+        }
+
+        // Check A button (button 0) to launch the ball
+        if (gp.buttons[0] && gp.buttons[0].pressed) {
+            if (!state.ballLaunched) {
+                state.ballLaunched = true;
+            }
+        }
     }
 }
 
@@ -59,11 +100,14 @@ function handleCanvasClick(event) {
         const classicBtnX = state.canvas.width / 2 - 100;
         const classicBtnY = state.canvas.height / 2 + 20;
         const survivalBtnY = classicBtnY + btnHeight + 20;
+        const challengeBtnY = survivalBtnY + btnHeight + 20;
 
         if (mouseY > classicBtnY && mouseY < classicBtnY + btnHeight && mouseX > classicBtnX && mouseX < classicBtnX + btnWidth) {
             startGame('classic');
         } else if (mouseY > survivalBtnY && mouseY < survivalBtnY + btnHeight && mouseX > classicBtnX && mouseX < classicBtnX + btnWidth) {
             startGame('survival');
+        } else if (mouseY > challengeBtnY && mouseY < challengeBtnY + btnHeight && mouseX > classicBtnX && mouseX < classicBtnX + btnWidth) {
+            startGame('challenge'); // Start challenge mode
         }
     } else if (state.screen === 'gameOver') {
         reset();
@@ -189,6 +233,7 @@ function drawStartScreen() {
     const classicBtnX = state.canvas.width / 2 - 100;
     const classicBtnY = state.canvas.height / 2 + 20;
     const survivalBtnY = classicBtnY + btnHeight + 20;
+    const challengeBtnY = survivalBtnY + btnHeight + 20;
 
     ctx.fillStyle = '#0095DD';
     ctx.fillRect(classicBtnX, classicBtnY, btnWidth, btnHeight);
@@ -201,6 +246,12 @@ function drawStartScreen() {
     ctx.font = '24px Arial';
     ctx.fillStyle = '#fff';
     ctx.fillText('Survival Mode', state.canvas.width / 2, survivalBtnY + 35);
+
+    ctx.fillStyle = '#8A2BE2'; // A new color for Challenge Mode
+    ctx.fillRect(classicBtnX, challengeBtnY, btnWidth, btnHeight);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Challenge Mode', state.canvas.width / 2, challengeBtnY + 35);
 
     ctx.textAlign = 'left';
 }
@@ -219,6 +270,11 @@ function draw() {
         drawBall();
         drawScore();
         drawLives();
+        if (state.gameMode === 'challenge') {
+            ctx.font = '20px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`Level: ${state.currentLevel}`, state.canvas.width / 2 - 40, 25);
+        }
         drawPauseButton(); // Call the new function
 
         if (state.isPaused) {
@@ -251,6 +307,7 @@ function draw() {
 
 function update() {
     if (state.screen === 'game' && !state.isPaused) {
+        pollGamepads(); // New: Poll gamepad input
         movePaddle();
         movePowerUps();
         moveBall();

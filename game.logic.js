@@ -38,7 +38,15 @@ export const state = {
     // Visual Enhancements
     ballTrail: [],
     paddleTrail: [],
-    maxTrailLength: 10 // Store last 10 positions for trail
+    maxTrailLength: 10, // Store last 10 positions for trail
+    // Challenge Mode Features
+    currentLevel: 0,
+    challengeLevels: [], // To be populated with level definitions
+    brickSwayDirection: 1, // 1 for right, -1 for left
+    brickSwayOffset: 0,
+    lastBrickMoveTime: 0,
+    brickFallInterval: 60000, // Bricks fall every 60 seconds
+    ballLaunched: false
 };
 
 // Event Dispatcher for sounds
@@ -58,6 +66,10 @@ export function handleKeyDown(e) {
         state.rightPressed = true;
     } else if (e.code == 'Left' || e.code == 'ArrowLeft') {
         state.leftPressed = true;
+    } else if (e.code == 'Space') {
+        if (!state.ballLaunched) {
+            state.ballLaunched = true;
+        }
     }
 }
 
@@ -217,6 +229,11 @@ export function spawnBrick() {
 }
 
 export function moveBall() {
+    if (!state.ballLaunched) {
+        state.ball.x = state.paddle.x + state.paddle.width / 2;
+        return;
+    }
+
     // Brick collision detection
     for (const brick of state.bricks) {
         if (brick.status === 1) {
@@ -237,11 +254,28 @@ export function moveBall() {
                     if (brick.scoreValue === 3) { // 100% chance from 3-hp bricks
                         spawnPowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2);
                     }
+                    if (state.gameMode === 'challenge') {
+                        const remainingBricks = state.bricks.filter(b => b.status === 1);
+                        if (remainingBricks.length === 0) {
+                            // Level complete!
+                            state.currentLevel++;
+                            if (state.currentLevel > 10) {
+                                state.screen = 'gameOver'; // Or 'gameWon' screen
+                                // Potentially add a game won screen here
+                            } else {
+                                // Load next level
+                                resetBallAndPaddle();
+                                startChallengeMode();
+                            }
+                        }
+                    }
                 } else {
                     // Update color based on remaining HP
                     switch (brick.hp) {
                         case 1: brick.color = '#A0A0A0'; break;
                         case 2: brick.color = '#D4A017'; break;
+                        case 3: brick.color = '#B80F0A'; break;
+                        case 4: brick.color = '#4B0082'; break; // Indigo for 4HP
                     }
                 }
                 // We don't break here, allowing the ball to hit multiple bricks in one frame
@@ -249,8 +283,38 @@ export function moveBall() {
         }
     }
 
+    // Handle brick movement in challenge mode
+    if (state.gameMode === 'challenge') {
+        const now = Date.now();
+        // Move bricks down every 60 seconds
+        if (now - state.lastBrickMoveTime > state.brickFallInterval) {
+            state.bricks.forEach(brick => {
+                if (brick.status === 1) {
+                    brick.y += brick.height + 5; // Move down by brick height + padding
+                    // Check if bricks hit the paddle area - game over
+                    if (brick.y + brick.height > state.paddle.y) {
+                        state.screen = 'gameOver';
+                    }
+                }
+            });
+            state.lastBrickMoveTime = now;
+        }
+
+        // Sway bricks left and right
+        state.brickSwayOffset += state.brickSwayDirection * 0.1; // Small sway increment
+        if (state.brickSwayOffset > 5 || state.brickSwayOffset < -5) { // Sway limit
+            state.brickSwayDirection *= -1; // Reverse direction
+        }
+        state.bricks.forEach(brick => {
+            if (brick.status === 1) {
+                brick.x = brick.initialX + state.brickSwayOffset;
+            }
+        });
+    }
+
     state.ball.x += state.ball.dx;
     state.ball.y += state.ball.dy;
+
 
     // Store ball trail position
     state.ballTrail.push({ x: state.ball.x, y: state.ball.y });
@@ -347,7 +411,12 @@ export function startGame(mode) {
     state.bricks = []; // Clear bricks
     state.powerUps = []; // Clear power-ups
     state.paddleHitCount = 0; // Reset paddle hit count
-    // Future mode-specific logic can be added here
+    state.ballLaunched = false;
+
+    if (mode === 'challenge') {
+        state.currentLevel = 1; // Start from level 1
+        startChallengeMode();
+    }
 }
 
 export function reset() {
@@ -367,5 +436,181 @@ export function reset() {
     state.paddleTrail = []; // Clear paddle trail
     state.bricks = []; // Clear bricks
     state.powerUps = []; // Clear power-ups
+    state.paddleHitCount = 0;
+    state.currentLevel = 0;
+    state.brickSwayDirection = 1;
+    state.brickSwayOffset = 0;
+    state.lastBrickMoveTime = 0;
 }
 
+
+export function resetBallAndPaddle() {
+    state.ball.x = state.canvas.width / 2;
+    state.ball.y = state.canvas.height - 30;
+    state.ball.dx = state.baseBallSpeed;
+    state.ball.dy = -state.baseBallSpeed;
+    state.paddle.x = state.canvas.width / 2 - state.paddle.width / 2;
+}
+
+export function startChallengeMode() {
+    state.bricks = []; // Clear any existing bricks
+    state.bricks = JSON.parse(JSON.stringify(state.challengeLevels[state.currentLevel - 1])); // Load bricks for current level
+    state.lastBrickMoveTime = Date.now(); // Initialize timer for brick movement
+    state.brickSwayOffset = 0;
+    state.brickSwayDirection = 1;
+}
+
+// Challenge Mode Definitions
+function createChallengeBrickLayout(level) {
+    const brickWidth = 75;
+    const brickHeight = 20;
+    const brickPadding = 10;
+    const brickOffsetTop = 30;
+    const brickOffsetLeft = 30;
+    const bricks = [];
+    const cols = Math.floor((state.canvas.width - 2 * brickOffsetLeft) / (brickWidth + brickPadding));
+    const rows = 5;
+
+    let layout = [];
+    let hpDistribution = [];
+
+    switch (level) {
+        case 1:
+            layout = [
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+            ];
+            hpDistribution = [1]; // All bricks are 1 HP
+            break;
+        case 2:
+            layout = [
+                [0,1,1,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1],
+                [1,1,0,0,0,0,1,1],
+                [1,1,1,1,1,1,1,1],
+                [0,1,1,1,1,1,1,0],
+            ];
+            hpDistribution = [1,2]; // Mixed 1 and 2 HP
+            break;
+        case 3:
+            layout = [
+                [1,0,1,0,1,0,1,0],
+                [0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0],
+                [0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0],
+            ];
+            hpDistribution = [2]; // All bricks are 2 HP
+            break;
+        case 4:
+            layout = [
+                [1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,1],
+                [1,0,1,1,1,1,0,1],
+                [1,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1],
+            ];
+            hpDistribution = [2,3]; // Mixed 2 and 3 HP
+            break;
+        case 5:
+            layout = [
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+            ];
+            hpDistribution = [3]; // All bricks are 3 HP
+            break;
+        case 6: // More complex pattern
+            layout = [
+                [1,0,0,1,1,0,0,1],
+                [0,1,0,1,1,0,1,0],
+                [0,0,1,1,1,1,0,0],
+                [0,1,0,1,1,0,1,0],
+                [1,0,0,1,1,0,0,1],
+            ];
+            hpDistribution = [1,2,3]; // Mixed HP
+            break;
+        case 7: // Pyramid
+            layout = [
+                [0,0,0,1,1,0,0,0],
+                [0,0,1,1,1,1,0,0],
+                [0,1,1,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+            ];
+            hpDistribution = [2,3]; // Tougher pyramid
+            break;
+        case 8: // Diagonal pattern
+            layout = [
+                [1,0,0,0,0,0,0,0],
+                [0,1,0,0,0,0,0,0],
+                [0,0,1,0,0,0,0,0],
+                [0,0,0,1,0,0,0,0],
+                [0,0,0,0,1,1,1,1],
+            ];
+            hpDistribution = [3]; // All very strong
+            break;
+        case 9: // Checkerboard with high HP
+            layout = [
+                [1,0,1,0,1,0,1,0],
+                [0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0],
+                [0,1,0,1,0,1,0,1],
+                [1,0,1,0,1,0,1,0],
+            ];
+            hpDistribution = [3,3,3,3,3,3,3,3]; // All 3 HP
+            break;
+        case 10: // Full block of toughest bricks
+            layout = [
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1],
+            ];
+            hpDistribution = [4]; // Even tougher bricks (need to handle 4HP in spawnBrick)
+            break;
+    }
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (layout[r] && layout[r][c] === 1) {
+                let hp = hpDistribution[Math.floor(Math.random() * hpDistribution.length)];
+                // For level 10, ensure 4 HP
+                if (level === 10) hp = 4;
+
+                let color;
+                switch (hp) {
+                    case 1: color = '#A0A0A0'; break; // Grey
+                    case 2: color = '#D4A017'; break; // Gold
+                    case 3: color = '#B80F0A'; break; // Red
+                    case 4: color = '#4B0082'; break; // Indigo for 4HP
+                    default: color = '#A0A0A0'; // Default to grey
+                }
+
+                bricks.push({
+                    x: c * (brickWidth + brickPadding) + brickOffsetLeft,
+                    y: r * (brickHeight + brickPadding) + brickOffsetTop,
+                    width: brickWidth,
+                    height: brickHeight,
+                    hp: hp,
+                    scoreValue: hp,
+                    status: 1,
+                    color: color,
+                    initialX: c * (brickWidth + brickPadding) + brickOffsetLeft // Store initial X for swaying
+                });
+            }
+        }
+    }
+    return bricks;
+}
+
+// Populate challengeLevels
+for (let i = 1; i <= 10; i++) {
+    state.challengeLevels.push(createChallengeBrickLayout(i));
+}
